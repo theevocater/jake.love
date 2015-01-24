@@ -5,15 +5,16 @@ function love.load()
   tilesetH, tilesetW = Tileset:getHeight(), Tileset:getWidth()
   TileQuads = {
     love.graphics.newQuad(0, 0, tileW, tileH, tilesetW, tilesetH),
+    love.graphics.newQuad(0, tileH, tileW, tileH, tilesetW, tilesetH),
   }
   TileTable = {
-    {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+    {2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2},
+    {2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2},
+    {2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2},
+    {2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2},
+    {2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2},
+    {2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,1},
+    {2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2},
     {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}
   }
   love.physics.setMeter(32)
@@ -22,12 +23,36 @@ function love.load()
   objects = {} -- table to hold all our physical objects
 
   --let's create the ground
-  objects.ground = {}
-  objects.ground.body = love.physics.newBody(world, love.window.getWidth()/2, love.window.getHeight()-tileH/2) --remember, the shape (the rectangle we create next) anchors to the body from its center, so we have to move it to (650/2, 650-50/2)
-  objects.ground.shape = love.physics.newRectangleShape(love.window.getWidth(), tileH) --make a rectangle with a width of 650 and a height of 50
-  objects.ground.fixture = love.physics.newFixture(objects.ground.body, objects.ground.shape) --attach shape to body
-  objects.ground.texture = Tileset
-  objects.ground.quad = TileQuads[1]
+  --objects.ground = {}
+  --objects.ground.body = love.physics.newBody(world, love.window.getWidth()/2, love.window.getHeight()-tileH/2) --remember, the shape (the rectangle we create next) anchors to the body from its center, so we have to move it to (650/2, 650-50/2)
+  --objects.ground.shape = love.physics.newRectangleShape(love.window.getWidth(), tileH) --make a rectangle with a width of 650 and a height of 50
+  --objects.ground.fixture = love.physics.newFixture(objects.ground.body, objects.ground.shape) --attach shape to body
+  --objects.ground.texture = Tileset
+  --objects.ground.quad = TileQuads[1]
+
+  objects.platforms = {}
+  for rowIndex=1, #TileTable do
+    local row = TileTable[rowIndex]
+    objects.platforms[rowIndex] = {}
+    for columnIndex=1, #row do
+      local number = row[columnIndex]
+      local curr = {}
+      -- we need to put the body at
+      -- width,height = (columnIndex*tileW),(rowIndex*tileH)
+      -- the shape (the rectangle we create next) anchors to the body from
+      -- its center, so we have to move it tileW/2, tileH/2
+      local w,h = (columnIndex*tileW)-tileW/2, (rowIndex*tileH)-tileH/2
+      if not (number == 2) then
+        curr.body = love.physics.newBody(world, w, h)
+        curr.shape = love.physics.newRectangleShape(tileW, tileH)
+        curr.fixture = love.physics.newFixture(curr.body, curr.shape) --attach shape to body
+      end
+      curr.texture = Tileset
+      curr.quad = TileQuads[number]
+      curr.number = number
+      objects.platforms[rowIndex][columnIndex] = curr
+    end
+  end
 
   objects.jake = {}
   objects.jake.body = love.physics.newBody(world, love.window.getWidth()/2, love.window.getHeight()/2, "dynamic") --place the body in the center of the world and make it dynamic, so it can move around
@@ -72,21 +97,28 @@ function love.draw()
       end
     end
   end
-  --love.graphics.setColor(72, 160, 14) -- set the drawing color to green for the ground
-  --love.graphics.polygon("fill", objects.ground.body:getWorldPoints(objects.ground.shape:getPoints())) -- draw a "filled in" polygon using the ground's coordinates
 
-  print(objects.jake.direction .. " " .. objects.jake.animation.iterator)
-  love.graphics.draw(objects.jake.texture, objects.jake.quads[objects.jake.direction][objects.jake.animation.iterator],
-    objects.jake.body:getX() - tileW/2, objects.jake.body:getY() - tileH/2)
+  -- draw jake
+  love.graphics.draw(objects.jake.texture,
+    objects.jake.quads[objects.jake.direction][objects.jake.animation.iterator],
+    objects.jake.body:getX() - tileW/2,
+    objects.jake.body:getY() - tileH/2)
 
-  --love.graphics.setColor(50, 50, 50) -- set the drawing color to grey for the blocks
-  --love.graphics.polygon("fill", objects.block1.body:getWorldPoints(objects.block1.shape:getPoints()))
-  --love.graphics.polygon("fill", objects.block2.body:getWorldPoints(objects.block2.shape:getPoints()))
+  -- draw bounding boxes of shapes
+  love.graphics.setColor(0,0,0)
+  for rowIndex=1, #objects.platforms do
+    local row = objects.platforms[rowIndex]
+    for columnIndex=1, #row do
+      if (row[columnIndex].fixture) then
+        love.graphics.polygon("line", row[columnIndex].body:getWorldPoints(row[columnIndex].shape:getPoints()))
+      end
+    end
+  end
 end
 
 function love.update(dt)
   world:update(dt)
-  require("lurker").update()
+  --require("lurker").update()
 	if objects.jake.moving then
 		objects.jake.animation.timer = objects.jake.animation.timer + dt
 		if objects.jake.animation.timer > 0.2 then

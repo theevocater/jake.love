@@ -4,3 +4,6 @@
 [submodule "modules/lurker"]
 	path = modules/lurker
 	url = git@github.com:rxi/lurker.git
+[submodule "modules/bump"]
+	path = modules/bump
+	url = git@github.com:kikito/bump.lua.git

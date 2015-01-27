@@ -10,3 +10,6 @@
 [submodule "modules/sti"]
 	path = modules/sti
 	url = git@github.com:karai17/Simple-Tiled-Implementation.git
+[submodule "modules/gamera"]
+	path = modules/gamera
+	url = git@github.com:kikito/gamera.git

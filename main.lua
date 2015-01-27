@@ -1,4 +1,7 @@
 local bump = require 'bump'
+local sti = require 'modules.sti'
+local gamera = require 'gamera'
+
 --local bump_debug = require 'bump_debug'
 
 local tileSize = 64

@@ -29,12 +29,19 @@ local function color(c)
   end
 end
 
-local function draw(box)
+local function drawDebug(box)
   r,g,b = color(box.c)
   love.graphics.setColor(r,g,b,70)
   love.graphics.rectangle("fill", box.x, box.y, box.w, box.h)
   love.graphics.setColor(r,g,b)
   love.graphics.rectangle("line", box.x, box.y, box.w, box.h)
+end
+
+local function draw(box)
+  if (debug) then
+    drawDebug(box)
+  end
+  love.graphics.draw(box.texture, box.quad, box.x, box.y)
 end
 -- helper functions
 
@@ -105,13 +112,11 @@ end
 
 local function jakeDraw()
   if (debug) then
-    draw(jake)
+    drawDebug(jake)
   end
   love.graphics.setColor(255,255,255)
   love.graphics.draw(jake.texture,
-    jake.quads[jake.direction][jake.animation.iterator],
-    jake.x,
-    jake.y)
+    jake.quads[jake.direction][jake.animation.iterator], jake.x, jake.y)
 end
 -- jake
 
@@ -130,6 +135,14 @@ local function loadWorld(world)
     addObject(world, wall)
   end
 
+  -- load the tileset for the world background stuff
+  local Tileset = love.graphics.newImage("TileSheet.png")
+  local tilesetH, tilesetW = Tileset:getHeight(), Tileset:getWidth()
+  local TileQuads = {
+    love.graphics.newQuad(0, 0, tileSize, tileSize, tilesetW, tilesetH),
+    love.graphics.newQuad(0, tileSize, tileSize, tileSize, tilesetW, tilesetH),
+  }
+
   -- create boxes for each tile
   for rowIndex,row in ipairs(TileTable) do
     for columnIndex,number in ipairs(row) do
@@ -143,6 +156,8 @@ local function loadWorld(world)
         addObject(world, curr)
       end
       curr.c = number
+      curr.texture = Tileset
+      curr.quad = TileQuads[number]
       table.insert(objects, curr)
     end
   end
@@ -169,7 +184,6 @@ end
 
 function love.keyreleased(key)
   if key == "tab" then
-    print("enabling debug")
     debug = not debug
   end
 end

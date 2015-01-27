@@ -60,6 +60,7 @@ local function jakeLoad(world)
     dx = 0,
     dy = 0,
     speed = 16,
+    dxCap = 8,
     jump = 16,
     direction = 'front',
     moving = false,
@@ -107,16 +108,16 @@ local function jakeUpdate(dt)
 
   local dx, dy = jake.dx, jake.dy
   -- this is a mess, should probably pull out the slowing down parts of it
-  if love.keyboard.isDown('right') and dx < jake.speed then
+  if love.keyboard.isDown('right') and dx < jake.dxCap then
     dx = dx + speed * dt
-  elseif love.keyboard.isDown('left') and dx > -jake.speed then
+  elseif love.keyboard.isDown('left') and dx > -jake.dxCap then
     dx = dx - (speed * dt)
-  elseif (dx ~= 0) then
+  elseif (dx ~= 0 and dy == 0) then
     -- not walking, so skid to a stop
     if (jake.direction == 'left') then
-      dx = dx + (2*speed * dt)
+      dx = dx + (3*speed * dt)
     elseif (jake.direction == 'right') then
-      dx = dx - (2*speed * dt)
+      dx = dx - (3*speed * dt)
     end
     if detectSignChange(jake.dx, dx) then
       dx = 0
@@ -134,26 +135,37 @@ local function jakeUpdate(dt)
   local x,y = 0,0
   if dx ~= 0 or dy ~= 0 then
     x, y, _, col_len = world:move(jake, jake.x + dx, jake.y + dy)
-  end
-  if jake.y == y then
-    jake.dy = 0
-  else
-    jake.y = y
-    jake.dy = dy
-  end
-  if jake.x == x then
-    jake.moving = false
-    jake.dx = 0
-  else
-    jake.moving = true
-    jake.x = x
-    jake.dx = dx
-    if (dx > 0) then
-      jake.direction = "right"
+    if jake.y == y then
+      jake.dy = 0
     else
-      jake.direction = "left"
+      jake.y = y
+      jake.dy = dy
+    end
+    if jake.x == x then
+      jake.moving = false
+      jake.dx = 0
+      jake.direction = 'front'
+    else
+      jake.moving = true
+      jake.x = x
+      jake.dx = dx
+      if (dx > 0) then
+        jake.direction = "right"
+      else
+        jake.direction = "left"
+      end
     end
   end
+
+  if (jake.dx == 0 and jake.dy == 0) then
+    jake.moving = false
+    if love.keyboard.isDown('down') then
+      jake.direction = 'back'
+    else
+      jake.direction = 'front'
+    end
+  end
+
   -- do animation
 	if jake.moving then
 		jake.animation.timer = jake.animation.timer + dt

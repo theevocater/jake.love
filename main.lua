@@ -1,7 +1,7 @@
 local bump = require 'bump'
 local sti = require 'modules.sti'
-local gamera = require 'gamera'
 
+local map = {}
 --local bump_debug = require 'bump_debug'
 
 local tileSize = 64
@@ -24,6 +24,11 @@ local function addObject(world, object)
   world:add(object, object.x, object.y, object.w, object.h)
 end
 
+local function addTile(world, tile)
+  print(tile.offset.x)
+  world:add(tile, tile.offset.x, tile.offset.y, tile.width, tile.height)
+end
+
 local function color(c)
   if (c == 0) then return 255,0,0
   elseif (c == 1) then return 0,0,255
@@ -41,9 +46,9 @@ local function drawDebug(box)
 end
 
 local function draw(box)
-  if (debug) then
-    drawDebug(box)
-  end
+  --if (debug) then
+    --drawDebug(box)
+  --end
   love.graphics.draw(box.texture, box.quad, box.x, box.y)
 end
 -- helper functions
@@ -150,6 +155,7 @@ local function jakeUpdate(dt)
       jake.direction = 'front'
     else
       jake.moving = true
+      map:setDrawRange(dx, 0, love.graphics.getWidth(), love.graphics.getHeight())
       jake.x = x
       jake.dx = dx
       if (dx > 0) then
@@ -195,42 +201,29 @@ end
 -- world
 local objects = {}
 local function loadWorld(world)
-
+  map = sti.new("Level1")
+  local worldWidth, worldHeight = map.width * map.tilewidth, map.height * map.tileheight
   -- add walls to outside
   local walls = {
-    { name='top', x=-1, y=-1, w=love.graphics.getWidth(), h=1},
-    { name='bottom', x=-1, y=love.graphics.getHeight()+1, w=love.graphics.getWidth(), h=1},
-    { name='left', x=-1, y=-1, w=1, h=love.graphics.getHeight()},
-    { name='right', x=love.graphics.getWidth()+1, y=-1, w=1, h=love.graphics.getHeight()}
+    { name='top', x=-1, y=-1, w=worldWidth, h=1},
+    { name='bottom', x=-1, y=worldHeight+1, w=worldWidth, h=1},
+    { name='left', x=-1, y=-1, w=1, h=worldHeight},
+    { name='right', x=worldWidth+1, y=-1, w=1, h=worldHeight}
   }
   for _,wall in ipairs(walls) do
     addObject(world, wall)
   end
 
-  -- load the tileset for the world background stuff
-  local Tileset = love.graphics.newImage("TileSheet.png")
-  local tilesetH, tilesetW = Tileset:getHeight(), Tileset:getWidth()
-  local TileQuads = {
-    love.graphics.newQuad(0, 0, tileSize, tileSize, tilesetW, tilesetH),
-    love.graphics.newQuad(0, tileSize, tileSize, tileSize, tilesetW, tilesetH),
-  }
-
-  -- create boxes for each tile
-  for rowIndex,row in ipairs(TileTable) do
-    for columnIndex,number in ipairs(row) do
-      local curr = {}
-      -- we need to put the tile at
-      -- width,height = (columnIndex*tileW),(rowIndex*tileH)
-      curr.x,curr.y = ((columnIndex-1)*tileSize), ((rowIndex-1)*tileSize)
-      curr.w,curr.h = tileSize,tileSize
-      -- number 2 is currently sky which doesn't collide
-      if not (number == 2) then
+  -- iterate the map and add everything that is marked as solid
+  for rowIndex,row in ipairs(map.layers["Ground"].data) do
+    for columnIndex,tile in ipairs(row) do
+      if tile and tile.properties['solid'] then
+        local curr = {}
+        curr.x,curr.y = ((columnIndex-1)*tileSize), ((rowIndex-1)*tileSize)
+        curr.w,curr.h = tileSize,tileSize
+        curr.tile = tile
         addObject(world, curr)
       end
-      curr.c = number
-      curr.texture = Tileset
-      curr.quad = TileQuads[number]
-      table.insert(objects, curr)
     end
   end
 end
@@ -244,13 +237,15 @@ function love.load()
 end
 
 function love.update(dt)
+  map:update(dt)
   jakeUpdate(dt)
 end
 
 function love.draw()
-  for _,object in ipairs(objects) do
-    draw(object)
-  end
+  --for _,object in ipairs(objects) do
+    --draw(object)
+  --end
+  map:draw()
   jakeDraw()
 end
 
